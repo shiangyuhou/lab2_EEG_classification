@@ -31,7 +31,7 @@ class EEGNet(nn.Module):
         )
 
         self.separableConv = nn.Sequential(
-            # nn.Conv2d(32, 32, kernel_size=(1, 15),padding=(0, 7), stride=(1, 1), padding=(0, 7),groups=32, bias=False,),
+            # nn.Conv2d(32, 32, kernel_size=(1, 15),padding=(0, 7), stride=(1, 1), groups=32, bias=False,),
             nn.Conv2d(32, 32, kernel_size=(1, 15),padding=(0, 7), groups=32, bias=False,),
             nn.Conv2d(32, 32, kernel_size=(1, 1), bias=False,),
             nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
