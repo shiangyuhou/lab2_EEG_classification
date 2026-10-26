@@ -1,0 +1,34 @@
+# macOS metadata
+.DS_Store
+._*
+__MACOSX/
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Datasets, archives and generated training artifacts
+*.npz
+*.npy
+*.zip
+*.pt
+*.pth
+*.ckpt
+weights/
+results/
+runs/
+logs/
+
+# Local credentials and machine settings
+.env
+.env.*
+!.env.example
+.aws/
+.ssh/
+.codex/
+.agents/
+.ipynb_checkpoints/
