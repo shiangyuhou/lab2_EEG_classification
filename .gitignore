@@ -18,8 +18,8 @@ env/
 *.pt
 *.pth
 *.ckpt
-weights/
-results/
+weights*/
+results*/
 runs/
 logs/
 

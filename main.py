@@ -19,6 +19,8 @@ import os
 import random
 
 RESULT_DIR = './results'
+WEIGHTS_DIR = './weights'
+VERSION = '_2sep_reproduce'
 folder_name = ""
 model_name = ""
 
@@ -56,10 +58,10 @@ def plot_train_acc(train_acc_list, epochs):
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy (%)')
     plt.legend()
-    plt.savefig(RESULT_DIR + f'/{folder_name}/accuracy_curve.png')
+    plt.savefig(RESULT_DIR + VERSION + f'/{folder_name}/accuracy_curve.png')
     # save the data of both acc
     # so that it can reproduce the plot later
-    np.save(RESULT_DIR + f'/{folder_name}/train_acc.npy', np.array(train_acc_list))
+    np.save(RESULT_DIR + VERSION + f'/{folder_name}/train_acc.npy', np.array(train_acc_list))
 
 def plot_train_loss(train_loss_list, epochs):
     # TODO plot training loss
@@ -70,10 +72,10 @@ def plot_train_loss(train_loss_list, epochs):
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
-    plt.savefig(RESULT_DIR + f'/{folder_name}/loss_curve.png')
+    plt.savefig(RESULT_DIR + VERSION + f'/{folder_name}/loss_curve.png')
     # save the data of both acc
     # so that it can reproduce the plot later
-    np.save(RESULT_DIR + f'/{folder_name}/train_loss.npy', np.array(train_loss_list))
+    np.save(RESULT_DIR + VERSION + f'/{folder_name}/train_loss.npy', np.array(train_loss_list))
 
 def plot_test_acc(test_acc_list, epochs):
     # TODO plot testing loss
@@ -84,10 +86,10 @@ def plot_test_acc(test_acc_list, epochs):
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy (%)')
     plt.legend()
-    plt.savefig(RESULT_DIR + f'/{folder_name}/test_accuracy_curve.png')
+    plt.savefig(RESULT_DIR + VERSION + f'/{folder_name}/test_accuracy_curve.png')
     # save the data of both acc
     # so that it can reproduce the plot later
-    np.save(RESULT_DIR + f'/{folder_name}/test_acc.npy', np.array(test_acc_list))
+    np.save(RESULT_DIR + VERSION + f'/{folder_name}/test_acc.npy', np.array(test_acc_list))
 
 def plot_test_loss(test_loss_list, epochs):
     plt.figure(figsize=(10, 5))
@@ -96,9 +98,9 @@ def plot_test_loss(test_loss_list, epochs):
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
-    plt.savefig(RESULT_DIR + f'/{folder_name}/test_loss_curve.png')
+    plt.savefig(RESULT_DIR + VERSION + f'/{folder_name}/test_loss_curve.png')
     plt.close()
-    np.save(RESULT_DIR + f'/{folder_name}/test_loss.npy', np.array(test_loss_list))
+    np.save(RESULT_DIR + VERSION + f'/{folder_name}/test_loss.npy', np.array(test_loss_list))
 
 
 def train(model, loader, criterion, optimizer, args):
@@ -124,6 +126,14 @@ def train(model, loader, criterion, optimizer, args):
                 loss = criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
+                if args.mode == "E" and args.type in (9, 10):
+                    max_norm = 0.25 if args.type == 9 else 1.0
+                    # Project each classifier weight vector onto the L2 ball.
+                    # Leave the bias and weights already within the limit unchanged.
+                    with torch.no_grad():
+                        weight = model.classify[0].weight
+                        norms = weight.norm(p=2, dim=1, keepdim=True)
+                        weight.mul_(max_norm / norms.clamp(min=max_norm))
                 # avg_loss += loss.item() * batch_size
                 avg_loss += loss.item() * inputs.size(0)  
                 _, pred = torch.max(outputs.data, 1)
@@ -145,9 +155,9 @@ def train(model, loader, criterion, optimizer, args):
             best_wts = copy.deepcopy(model.state_dict())
         print(f'Test Acc. (%): {test_acc:3.2f}%')
         print(f'Test Loss: {test_loss:.6f}')
-    if not os.path.exists('./weights'):
-        os.makedirs('./weights')
-    torch.save(best_wts, './weights/' + folder_name + '_best.pt')
+    if not os.path.exists(WEIGHTS_DIR+VERSION):
+        os.makedirs(WEIGHTS_DIR+VERSION)
+    torch.save(best_wts, WEIGHTS_DIR + VERSION + '/' + folder_name + '_best.pt')
     return avg_acc_list, avg_loss_list, test_acc_list, test_loss_list
 
 
@@ -180,9 +190,11 @@ if __name__ == '__main__':
     parser.add_argument("-num_epochs", type=int, default=150)
     parser.add_argument("-batch_size", type=int, default=64)
     parser.add_argument("-lr", type=float, default=0.01)
+    
+    parser.add_argument("-ks", type=int, default=51, help="kernel size for convolutional layers")
 
     parser.add_argument("-seed", type=int, default=42)
-    parser.add_argument("-type", type=int, default=0, choices=[0, 1, 2, 3, 4], help="0 for elu, 1 for relu, 2 for leaky relu, 3 for elu(alpha=0.5), 4 for elu(dropout=0.5)")
+    parser.add_argument("-type", type=int, default=0, choices=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], help="0 for elu, 1 for relu, 2 for leaky relu, 3 for elu(alpha=0.5), 4 for elu(dropout=0.5), 5 for relu(dropout=0.5), 6 for relu(dropout=0.1), 7 for relu(dropout=0.35), 8 for relu(dropout=0.35) with custom kernel size, 9 for relu(dropout=0.35, kernel=51) with classifier max-norm=0.25, 10 for relu(dropout=0.35, kernel=51) with classifier max-norm=1.0")
 
     args = parser.parse_args()
 
@@ -193,10 +205,10 @@ if __name__ == '__main__':
     model_name = args.mode+str(args.type)+"_"+str(args.seed)
     folder_name = model_name + '_' + datetime.now().strftime("%d%H%M%S")
     # check the results folder exist or not, if not, create it
-    if not os.path.exists(RESULT_DIR):
-        os.makedirs(RESULT_DIR)
-    if not os.path.exists(RESULT_DIR + f'/{folder_name}'):
-        os.makedirs(RESULT_DIR + f'/{folder_name}')
+    if not os.path.exists(RESULT_DIR+VERSION):
+        os.makedirs(RESULT_DIR+VERSION)
+    if not os.path.exists(RESULT_DIR + VERSION + f'/{folder_name}'):
+        os.makedirs(RESULT_DIR + VERSION + f'/{folder_name}')
 
     train_data, train_label, test_data, test_label = dataloader.read_bci_data()
     train_dataset = BCIDataset(train_data, train_label)
@@ -217,8 +229,20 @@ if __name__ == '__main__':
                 model = EEGNet(activation="elu", alpha=0.5, dropout=0.25)
             case 4:
                 model = EEGNet(activation="elu", alpha=1.0, dropout=0.5)
+            case 5:
+                model = EEGNet(activation="relu", alpha=1.0, dropout=0.5)
+            case 6:
+                model = EEGNet(activation="relu", alpha=1.0, dropout=0.1)
+            case 7:
+                model = EEGNet(activation="relu", alpha=1.0, dropout=0.35)
+            case 8:
+                model = EEGNet(activation="relu", alpha=1.0, dropout=0.35, ks=args.ks)
+            case 9:
+                model = EEGNet(activation="relu", alpha=1.0, dropout=0.35, ks=51)
+            case 10:
+                model = EEGNet(activation="relu", alpha=1.0, dropout=0.35, ks=51)
             case _:
-                raise ValueError("Invalid type. Choose either 0, 1, 2, 3, or 4.")
+                raise ValueError("Invalid type. Choose an integer from 0 to 10.")
     elif args.mode == "D":
         model = DeepConvNet()
     else:
@@ -238,11 +262,11 @@ if __name__ == '__main__':
 
     # test with the best model
     best_model = copy.deepcopy(model)
-    best_model.load_state_dict(torch.load('./weights/' + folder_name + '_best.pt'))
+    best_model.load_state_dict(torch.load(WEIGHTS_DIR + VERSION + '/' + folder_name + '_best.pt'))
     best_model.to(device)
     best_test_acc, best_test_loss = test(best_model, test_loader, criterion)
     # save the best test accuracy and loss to a text file
-    with open(RESULT_DIR + f'/{folder_name}/best_test_results.txt', 'w') as f:
+    with open(RESULT_DIR + VERSION + f'/{folder_name}/best_test_results.txt', 'w') as f:
         f.write(f'Best Test Accuracy: {best_test_acc:.2f}%\n')
         f.write(f'The loss of the best model: {best_test_loss:.6f}\n')
         
