@@ -126,8 +126,8 @@ def train(model, loader, criterion, optimizer, args):
                 loss = criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
-                if args.mode == "E" and args.type in (9, 10):
-                    max_norm = 0.25 if args.type == 9 else 1.0
+                if args.mode == "E" and args.type in (9, 10, 11, 12):
+                    max_norm = {9: 0.25, 10: 1.0, 11: 2.0, 12: 1.0}[args.type]
                     # Project each classifier weight vector onto the L2 ball.
                     # Leave the bias and weights already within the limit unchanged.
                     with torch.no_grad():
@@ -194,7 +194,7 @@ if __name__ == '__main__':
     parser.add_argument("-ks", type=int, default=51, help="kernel size for convolutional layers")
 
     parser.add_argument("-seed", type=int, default=42)
-    parser.add_argument("-type", type=int, default=0, choices=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], help="0 for elu, 1 for relu, 2 for leaky relu, 3 for elu(alpha=0.5), 4 for elu(dropout=0.5), 5 for relu(dropout=0.5), 6 for relu(dropout=0.1), 7 for relu(dropout=0.35), 8 for relu(dropout=0.35) with custom kernel size, 9 for relu(dropout=0.35, kernel=51) with classifier max-norm=0.25, 10 for relu(dropout=0.35, kernel=51) with classifier max-norm=1.0")
+    parser.add_argument("-type", type=int, default=0, choices=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], help="0 for elu, 1 for relu, 2 for leaky relu, 3 for elu(alpha=0.5), 4 for elu(dropout=0.5), 5 for relu(dropout=0.5), 6 for relu(dropout=0.1), 7 for relu(dropout=0.35), 8 for relu(dropout=0.35) with custom kernel size, 9 for relu(dropout=0.35, kernel=51) with classifier max-norm=0.25, 10 for relu(dropout=0.35, kernel=51) with classifier max-norm=1.0, 11 for relu(dropout=0.35, kernel=51) with classifier max-norm=2.0, 12 for relu(dropout=0.25, kernel=51) with classifier max-norm=1.0")
 
     args = parser.parse_args()
 
@@ -241,8 +241,12 @@ if __name__ == '__main__':
                 model = EEGNet(activation="relu", alpha=1.0, dropout=0.35, ks=51)
             case 10:
                 model = EEGNet(activation="relu", alpha=1.0, dropout=0.35, ks=51)
+            case 11:
+                model = EEGNet(activation="relu", alpha=1.0, dropout=0.35, ks=51)
+            case 12:
+                model = EEGNet(activation="relu", alpha=1.0, dropout=0.25, ks=51)
             case _:
-                raise ValueError("Invalid type. Choose an integer from 0 to 10.")
+                raise ValueError("Invalid type. Choose an integer from 0 to 12.")
     elif args.mode == "D":
         model = DeepConvNet()
     else:

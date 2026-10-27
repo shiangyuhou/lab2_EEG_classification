@@ -1,6 +1,8 @@
 for seed in 42 123 2026 1026 3600
 do
-    python main.py -mode E -type 10 -seed "$seed"  # relu, dropout=0.35, classifier max-norm=1.0
+    python main.py -mode E -type 12 -seed "$seed"  # relu, dropout=0.25, classifier max-norm=1.0
+    # python main.py -mode E -type 11 -seed "$seed"  # relu, dropout=0.35, classifier max-norm=2.0
+    # python main.py -mode E -type 10 -seed "$seed"  # relu, dropout=0.35, classifier max-norm=1.0
     # python main.py -mode E -type 9 -seed "$seed"  # relu, dropout=0.35, classifier max-norm=0.25
     # python main.py -mode E -type 8 -seed $seed -ks 63 # relu with dropout=0.35
     # python main.py -mode E -type 7 -seed $seed  # relu with dropout=0.35
