@@ -23,25 +23,19 @@ lab2_EEG_classification/
 
 目前程式匯入的第三方套件為 PyTorch、NumPy、pandas、tqdm、Matplotlib 與 torchsummary。尚未建立或驗證固定版本的環境；PyTorch 安裝需依遠端主機的 CPU / CUDA 環境選擇。
 
-目前 dataloader 使用相對於工作目錄的 `./lab2_EEG_classification/data/`。因此，需從 repository 的上一層執行：
+執行./run.sh 
 
 ```bash
-python3 lab2_EEG_classification/main.py -num_epochs 150 -batch_size 64 -lr 0.01
+for seed in 42 123 2026 1026 3600
+do
+    python main.py -mode D -type 0 -seed 123 -lr 0.01
+    python main.py -mode E -type 0 -seed 42 -lr 0.005
+    python main.py -mode E -type 25 -seed 123 -lr 0.005
+    python main.py -mode E -type 30 -seed "$seed" -lr 0.005  # E25 with temporal kernel=51
+    python main.py -mode E -type 31 -seed "$seed" -lr 0.005  # E25 with temporal kernel=63
+    python main.py -mode E -type 29 -seed "$seed" -lr 0.005  # E25 with ReLU activation
+    python main.py -mode E -type 27 -seed "$seed" -lr 0.005  # E25 + 4 Hz highpass FIR
+    python main.py -mode E -type 28 -seed "$seed" -lr 0.005  # E25 + 30 Hz lowpass FIR
+    python main.py -mode E -type 26 -seed "$seed" -lr 0.005  # case 20 architecture, cosine LR decay to 0.0001
+done
 ```
-
-以上為現有程式的命令格式；模型、輸出目錄與程式問題修正前，尚不能完成訓練。
-
-## 日常 Git 操作
-
-在此 repository 目錄執行：
-
-```bash
-git status
-git diff
-git add main.py dataloader.py models/EEGNet.py README.md
-git commit -m "Describe the change"
-```
-
-設定 GitHub remote 後，可用 `git push -u origin main` 首次上傳，後續使用 `git push`。遠端主機首次使用 `git clone` 取得程式，後續用 `git pull --ff-only` 更新。
-
-實驗時記錄 `git rev-parse HEAD` 的 commit ID 及完整超參數，方便追溯程式版本。兩台主機切換前，先提交並推送需要保留的修改。
